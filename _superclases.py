@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Optional
 import pandas as pd
+import numpy as np
 
 class Clasificador(ABC):
     def __init__(self, max_prof: int = -1, min_obs_nodo: int = -1):
@@ -17,8 +18,8 @@ class Clasificador(ABC):
     
 class ArbolDecision(ABC):
     def __init__(self) -> None:
-        self.data: Optional[pd.DataFrame] = None
-        self.target: Optional[pd.Series]= None
+        self.data: Optional[pd.DataFrame | np.ndarray | list[list]] = None
+        self.target: Optional[pd.Series | np.ndarray | list]= None
         self.atributo: Optional[str] = None
         self.categoria: Optional[str]= None
         self.target_categorias: Optional[list[str]]= None

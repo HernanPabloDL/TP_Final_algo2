@@ -2,6 +2,7 @@ from sklearn.model_selection import train_test_split
 import pandas as pd
 import numpy as np
 from copy import deepcopy
+from collections import Counter
 from _superclases import Clasificador, ArbolDecision
 
 class ArbolDecisionID3(ArbolDecision, Clasificador):
@@ -13,6 +14,25 @@ class ArbolDecisionID3(ArbolDecision, Clasificador):
     def _traer_hiperparametros(self, arbol_previo):
         self.max_prof = arbol_previo.max_prof
         self.min_obs_nodo = arbol_previo.min_obs_nodo
+
+    def _asignar_clase(self): #agregar getters y setters
+        if isinstance(self.target, pd.Series):
+            self.clase = self.target.value_counts().idxmax()
+        elif isinstance(self.target, np.ndarray):
+            valores_unicos, conteos = np.unique(self.target, return_counts=True)
+            indice_max_conteo = np.argmax(conteos)
+            self.clase = valores_unicos[indice_max_conteo]
+        elif isinstance(self.target, list):
+            contador = Counter(self.target)
+            self.clase = contador.most_common(1)[0][0] #TODO: Exception
+
+    def _asignar_categorias(self):
+        if isinstance(self.target, pd.Series):
+            self.target_categorias = self.target.unique()
+        elif isinstance(self.target, np.ndarray):
+            self.target_categorias = np.unique(self.target)
+        elif isinstance(self.target, list):
+            self.target_categorias = list(set(self.target))
 
 
     def __len__(self) -> int:
@@ -44,13 +64,19 @@ class ArbolDecisionID3(ArbolDecision, Clasificador):
             nuevo_arbol.data = nueva_data
             nuevo_arbol.target = nuevo_target
             nuevo_arbol.categoria = categoria
-            nuevo_arbol.clase = nuevo_target.value_counts().idxmax()
+            nuevo_arbol._asignar_clase()
             nuevo_arbol._traer_hiperparametros(self) # hice un metodo porque van a ser muchos de hiperparametros
             self.subs.append(nuevo_arbol)
     
     def entropia(self) -> float:
+        
+        if isinstance(self.target, list) or  isinstance(self.target, np.ndarray): # tambien podría ser if not isinstance(self.target, pd.Series) y en el fit atrapar la exception
+            target = pd.Series(self.target)
+        else:
+            target = self.target
+            
         entropia = 0
-        proporciones = self.target.value_counts(normalize= True)
+        proporciones = target.value_counts(normalize= True)
         target_categorias = self.target.unique()
         for c in target_categorias:
             proporcion = proporciones.get(c, 0)
@@ -101,10 +127,11 @@ class ArbolDecisionID3(ArbolDecision, Clasificador):
         '''
         self.target = y
         self.data = X
-        self.clase = self.target.value_counts().idxmax()
+        self._asignar_clase()
+        self._asignar_categorias()
         
         def _interna(arbol: ArbolDecisionID3, prof_acum: int = 0):
-            arbol.target_categorias = y.unique()
+            arbol._asignar_categorias()
             
             if prof_acum == 0:
                 prof_acum = 1
