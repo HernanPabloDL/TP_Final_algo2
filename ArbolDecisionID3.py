@@ -10,30 +10,42 @@ class ArbolDecisionID3(ArbolDecision, Clasificador):
         super().__init__()
         self.max_prof = max_prof
         self.min_obs_nodo = min_obs_nodo        #TODO: Los hiperparametros deberian traerse con el super de Clasificador, no pude hacerlo andar.
-            
+
+    @property
+    def data(self):
+        return self._data
+    
+    @data.setter
+    def data(self, X):
+        if isinstance(X, pd.DataFrame):
+            self._data = X
+        elif isinstance(X, np.ndarray) or isinstance(X, list):
+            self._data = pd.DataFrame(X)
+        else:
+            TypeError()
+
+    @property
+    def target(self):
+        return self._target
+    
+    @target.setter
+    def target(self, y):
+        if isinstance(y, pd.Series):
+            self._target = y
+        elif isinstance(y, np.ndarray) or isinstance(y, list):
+            self._target = pd.Series(y)
+        else:
+            TypeError()
+
     def _traer_hiperparametros(self, arbol_previo):
         self.max_prof = arbol_previo.max_prof
         self.min_obs_nodo = arbol_previo.min_obs_nodo
 
-    def _asignar_clase(self): #agregar getters y setters
-        if isinstance(self.target, pd.Series):
-            self.clase = self.target.value_counts().idxmax()
-        elif isinstance(self.target, np.ndarray):
-            valores_unicos, conteos = np.unique(self.target, return_counts=True)
-            indice_max_conteo = np.argmax(conteos)
-            self.clase = valores_unicos[indice_max_conteo]
-        elif isinstance(self.target, list):
-            contador = Counter(self.target)
-            self.clase = contador.most_common(1)[0][0] #TODO: Exception
+    def _asignar_clase(self):
+        self.clase = self.target.value_counts().idxmax()
 
     def _asignar_categorias(self):
-        if isinstance(self.target, pd.Series):
-            self.target_categorias = self.target.unique()
-        elif isinstance(self.target, np.ndarray):
-            self.target_categorias = np.unique(self.target)
-        elif isinstance(self.target, list):
-            self.target_categorias = list(set(self.target))
-
+        self.target_categorias = self.target.unique()
 
     def __len__(self) -> int:
         if self.es_hoja():
@@ -83,7 +95,7 @@ class ArbolDecisionID3(ArbolDecision, Clasificador):
             entropia += proporcion * np.log2(proporcion)
         return -entropia if entropia != 0 else 0
     
-    def _information_gain(self, atributo: str) -> float:
+    def _information_gain(self, atributo: str | int) -> float:
         entropia_actual = self.entropia()
         len_actual = len(self.data)
 
@@ -118,7 +130,7 @@ class ArbolDecisionID3(ArbolDecision, Clasificador):
     def _total_samples(self):
         return len(self.data)
 
-    def fit(self, X: pd.DataFrame, y: pd.Series):
+    def fit(self, X: pd.DataFrame | list[list] | np.ndarray, y: pd.Series | list | np.ndarray):
         '''
         Condicion de split
               - Unico valor para target (nodo puro)
@@ -147,7 +159,10 @@ class ArbolDecisionID3(ArbolDecision, Clasificador):
 
         _interna(self)
     
-    def predict(self, X:pd.DataFrame) -> list[str]:
+    def predict(self, X:pd.DataFrame | list[list] | np.ndarray) -> list[str]:
+        if not isinstance(X, pd.DataFrame):
+            X = pd.DataFrame(X)
+
         predicciones = []
 
         def _recorrer(arbol, fila: pd.Series) -> None:
@@ -221,15 +236,23 @@ def accuracy_score(y_true: list[str], y_pred: list[str]) -> float:
         return precision
 
 
-def probar(df, target:str):
-    X = df.drop(target, axis=1)
-    y = df[target]
+def probar(df, target:str | int):
+    if isinstance(df, pd.DataFrame):
+        X = df.drop(target, axis=1)
+        y = df[target]
+    elif isinstance(df, np.ndarray) and isinstance(target, int):
+        X = np.delete(df, target, axis=1)
+        y = df[:, target]
+    elif isinstance(df, list) and isinstance(target, int):
+        X = df.copy()
+        y = [x.pop(target) for x in X]
+
     x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     arbol = ArbolDecisionID3(min_obs_nodo=120)
     arbol.fit(x_train, y_train)
     arbol.imprimir()
     y_pred = arbol.predict(x_test)
-    print(f"\naccuracy: {accuracy_score(y_test.tolist(), y_pred)}")
+    print(f"\naccuracy: {accuracy_score(y_test.tolist() if not isinstance(y_test, list) else y_test, y_pred)}")
     print(f"cantidad de nodos: {len(arbol)}")
     print(f"altura: {arbol.altura()}\n")
 
@@ -244,7 +267,14 @@ if __name__ == "__main__":
 
     tennis = pd.read_csv("PlayTennis.csv")
 
+    array = tennis.values
+    lista = tennis.values.tolist()
+
     print("Pruebo con patients\n")
     probar(patients, "Level")
     print("Pruebo con Play Tennis\n")
     probar(tennis, "Play Tennis")
+    print("Pruebo con tennis pasado a array")
+    probar(array, 4)
+    print("Pruebo con tennis pasado a lista")
+    probar(lista, 4)

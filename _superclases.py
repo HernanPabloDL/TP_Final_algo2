@@ -18,8 +18,8 @@ class Clasificador(ABC):
     
 class ArbolDecision(ABC):
     def __init__(self) -> None:
-        self.data: Optional[pd.DataFrame | np.ndarray | list[list]] = None
-        self.target: Optional[pd.Series | np.ndarray | list]= None
+        self._data: Optional[pd.DataFrame | np.ndarray | list[list]] = None
+        self._target: Optional[pd.Series | np.ndarray | list]= None
         self.atributo: Optional[str] = None
         self.categoria: Optional[str]= None
         self.target_categorias: Optional[list[str]]= None
