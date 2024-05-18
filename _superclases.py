@@ -73,8 +73,8 @@ class Arbol(ABC):
     
     @abstractmethod
     def _information_gain(self, atributo: str) -> float:
-        raise NotImplementedError    
-    
+        raise NotImplementedError 
     @abstractmethod
     def imprimir(self) -> None:
-        raise NotImplementedError
+        raise NotImplementedError   
+    
