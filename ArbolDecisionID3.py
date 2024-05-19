@@ -167,7 +167,6 @@ class ArbolDecisionID3(Arbol, ClasificadorArbol):
             print(prefijo_hoja + values)
             print(prefijo_hoja + clase)
 
-
 def accuracy_score(y_true: list[str], y_pred: list[str]) -> float:
         if len(y_true) != len(y_pred):
             raise ValueError()
@@ -175,8 +174,7 @@ def accuracy_score(y_true: list[str], y_pred: list[str]) -> float:
         precision = correctas / len(y_true)
         return precision
 
-
-def probar(df, target:str):
+def probar_ID3(df, target:str):
     X = df.drop(target, axis=1)
     y = df[target]
     x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -188,18 +186,6 @@ def probar(df, target:str):
     print(f"cantidad de nodos: {len(arbol)}")
     print(f"altura: {arbol.altura()}\n")
 
+#----------------------------------------------------------------------------
 
-if __name__ == "__main__":
-    #https://www.kaggle.com/datasets/thedevastator/cancer-patients-and-air-pollution-a-new-link
-    patients = pd.read_csv("cancer_patients.csv", index_col=0)
-    patients = patients.drop("Patient Id", axis = 1)
-    bins = [0, 15, 20, 30, 40, 50, 60, 70, float('inf')]
-    labels = ['0-15', '15-20', '20-30', '30-40', '40-50', '50-60', '60-70', '70+']
-    patients['Age'] = pd.cut(patients['Age'], bins=bins, labels=labels, right=False)
-
-    tennis = pd.read_csv("PlayTennis.csv")
-
-    print("Pruebo con patients\n")
-    probar(patients, "Level")
-    print("Pruebo con Play Tennis\n")
-    probar(tennis, "Play Tennis")
+   
